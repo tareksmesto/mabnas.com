@@ -1,0 +1,46 @@
+# Landing-page-only Caddyfile.
+# Serves mabnas.com + www.mabnas.com as static files.
+# Proxies /umami to the Umami analytics dashboard.
+# Replace with the full Caddyfile when deploying the app stack.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$LANDING_DOMAIN}, www.{$LANDING_DOMAIN} {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-Server
+	}
+	header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube.com; connect-src 'self'; frame-ancestors 'none'"
+	header Cache-Control "public, max-age=3600"
+
+	# Umami analytics tracking script + API
+	handle /script.js {
+		reverse_proxy umami:3000
+	}
+	handle /api/send {
+		reverse_proxy umami:3000
+	}
+
+	# Umami dashboard (admin only — consider restricting by IP later)
+	handle /umami* {
+		uri strip_prefix /umami
+		reverse_proxy umami:3000
+	}
+
+	# Contact form — backend not running yet, return helpful message
+	handle /api/public/* {
+		respond 503 {
+			body `{"detail":"Contact form is not available yet. Please email info@mabnas.com directly."}`
+			close
+		}
+	}
+
+	root * /srv/landing
+	file_server
+}
