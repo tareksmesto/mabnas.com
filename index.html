@@ -424,62 +424,19 @@
     </div>
   </section>
 
-  <!-- ═══ VIDEO DEMOS ═══ -->
+  <!-- ═══ VIDEO DEMO ═══ -->
   <section class="section section-alt" id="demos">
     <div class="section-inner">
       <div class="section-header">
-        <h2>Video Demos</h2>
-        <p>Watch how Mabna works — from modelling to design check to fabrication.</p>
+        <h2>See Mabna in action</h2>
+        <p>Watch a walkthrough of the platform.</p>
       </div>
-      <div class="video-grid">
-
-        <!-- ✏️ TO ADD A VIDEO:
-             Option 1 — Local .mp4 file:
-               Put the file in landing/videos/ and replace the placeholder div with:
-               <div class="video-placeholder has-video">
-                 <video controls poster="images/thumb-modeling.png">
-                   <source src="videos/modeling-demo.mp4" type="video/mp4">
-                 </video>
-               </div>
-
-             Option 2 — YouTube embed:
-               Replace the placeholder div with:
-               <div class="video-placeholder has-video">
-                 <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-                   allowfullscreen></iframe>
-               </div>
-        -->
-
-        <div class="video-card">
-          <div class="video-placeholder">
-            🎬 Add video: Modelling demo<br>
-            <small>videos/modeling-demo.mp4<br>or YouTube embed</small>
-          </div>
-          <div class="video-card-body">
-            <h3>3D Modelling</h3>
-            <p>Create a full steel structure from scratch in minutes.</p>
-          </div>
-        </div>
-        <div class="video-card">
-          <div class="video-placeholder">
-            🎬 Add video: Design check demo<br>
-            <small>videos/design-demo.mp4<br>or YouTube embed</small>
-          </div>
-          <div class="video-card-body">
-            <h3>Design &amp; Analysis</h3>
-            <p>Run FEM analysis and AISC checks with full transparency.</p>
-          </div>
-        </div>
-        <div class="video-card">
-          <div class="video-placeholder">
-            🎬 Add video: Fabrication demo<br>
-            <small>videos/fab-demo.mp4<br>or YouTube embed</small>
-          </div>
-          <div class="video-card-body">
-            <h3>Fabrication Management</h3>
-            <p>From engineering model to shop floor — work orders, parts, tracking.</p>
-          </div>
+      <div style="max-width: 800px; margin: 0 auto; border-radius: 14px; overflow: hidden; border: 1px solid var(--border);">
+        <div style="position: relative; padding-bottom: 56.25%; height: 0;">
+          <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+            allowfullscreen></iframe>
         </div>
       </div>
     </div>
@@ -550,109 +507,22 @@
         <h2>Get in touch</h2>
         <p>Have questions? Send us a message and we'll get back to you.</p>
       </div>
-      <div class="contact-layout">
-        <!-- Form -->
-        <form class="contact-form" id="contactForm" onsubmit="return submitContact(event)">
-          <div class="form-row">
-            <label>Full name *
-              <input type="text" name="name" required placeholder="Your name">
-            </label>
-            <label>Email *
-              <input type="email" name="email" required placeholder="you@company.com">
-            </label>
-          </div>
-          <div class="form-row">
-            <label>Phone
-              <input type="tel" name="phone" placeholder="+966 5xx xxx xxxx">
-            </label>
-            <label>Location
-              <input type="text" name="location" placeholder="City, Country">
-            </label>
-          </div>
-          <label>Message *
-            <textarea name="message" required placeholder="Tell us about your project or question..."></textarea>
-          </label>
-          <p class="contact-consent">
-            By submitting this form you agree to our
-            <a href="privacy.html">Privacy Policy</a>. We'll use your information
-            only to respond to your enquiry, as described in our policy. You can
-            request deletion at any time.
-          </p>
-          <div>
-            <button type="submit" class="btn btn-primary" id="contactBtn">Send message</button>
-          </div>
-          <div class="form-status" id="formStatus"></div>
-        </form>
-
-        <!-- Info sidebar -->
-        <div class="contact-info">
-          <div class="contact-info-item">
-            <div class="contact-info-icon">✉</div>
-            <div>
-              <h4>Email</h4>
-              <p><a href="mailto:info@mabnas.com">info@mabnas.com</a></p>
-            </div>
-          </div>
-          <div class="contact-info-item">
-            <div class="contact-info-icon">💼</div>
-            <div>
-              <h4>LinkedIn</h4>
-              <p><a href="https://linkedin.com/company/mabna" target="_blank" rel="noopener">linkedin.com/company/mabna</a></p>
-            </div>
-          </div>
-          <div class="contact-info-item">
-            <div class="contact-info-icon">🌐</div>
-            <div>
-              <h4>Platform</h4>
-              <p><a href="https://app.mabnas.com">app.mabnas.com</a></p>
-            </div>
-          </div>
-          <div style="margin-top: 12px; padding: 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;">
-            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Response time</h4>
-            <p style="font-size: 13px; color: var(--fg-muted);">We typically respond within 24 hours during business days (Sun-Thu, Saudi Arabia time).</p>
-          </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; max-width: 700px; margin: 0 auto;">
+        <div class="contact-info-item" style="flex: 1; min-width: 200px; padding: 28px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; text-align: center; flex-direction: column; align-items: center;">
+          <div class="contact-info-icon" style="margin-bottom: 12px;">✉</div>
+          <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">Email us</h4>
+          <p style="font-size: 15px;"><a href="mailto:info@mabnas.com" style="font-weight: 600;">info@mabnas.com</a></p>
         </div>
+        <div class="contact-info-item" style="flex: 1; min-width: 200px; padding: 28px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; text-align: center; flex-direction: column; align-items: center;">
+          <div class="contact-info-icon" style="margin-bottom: 12px;">💼</div>
+          <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">LinkedIn</h4>
+          <p style="font-size: 15px;"><a href="https://linkedin.com/company/mabnas" target="_blank" rel="noopener" style="font-weight: 600;">Follow us</a></p>
+        </div>
+      
       </div>
     </div>
   </section>
 
-  <script>
-  async function submitContact(e) {
-    e.preventDefault();
-    var form = document.getElementById('contactForm');
-    var btn = document.getElementById('contactBtn');
-    var status = document.getElementById('formStatus');
-    btn.disabled = true; btn.textContent = 'Sending...';
-    status.className = 'form-status'; status.textContent = '';
-    var data = {
-      name: form.name.value.trim(),
-      email: form.email.value.trim(),
-      phone: form.phone.value.trim(),
-      location: form.location.value.trim(),
-      message: form.message.value.trim()
-    };
-    try {
-      var res = await fetch('/api/public/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        var err = await res.json().catch(function() { return { detail: 'Server error' }; });
-        throw new Error(err.detail || 'Failed to send');
-      }
-      status.className = 'form-status success';
-      status.textContent = 'Message sent! We will get back to you soon.';
-      form.reset();
-    } catch (ex) {
-      status.className = 'form-status error';
-      status.textContent = ex.message || 'Something went wrong. Please email info@mabnas.com directly.';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Send message';
-    }
-    return false;
-  }
-  </script>
 
   <!-- ═══ FOOTER ═══ -->
   <footer class="footer">
