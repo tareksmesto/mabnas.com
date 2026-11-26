@@ -41,13 +41,14 @@ app.add_middleware(
 )
 
 # ── Abuse controls ────────────────────────────────────────────────────────
-FREE_RUNS = 3              # hard cap per visitor (IP), then sign-up gate
+WIND_FREE_RUNS = 3          # wind tool: a real calc, strict cap → sign-up gate
+FRAME_FREE_RUNS = 15        # frame tool: just geometry drawing, more generous
 WINDOW_SECONDS = 24 * 3600  # rolling window the cap applies over
-MIN_INTERVAL = 1.5          # seconds between calls from one IP (flood guard)
+MIN_INTERVAL = 0.3          # min seconds between calls from one IP (flood guard)
 
 _lock = threading.Lock()
-_hits: dict[str, list[float]] = defaultdict(list)  # ip -> successful-run timestamps
-_last: dict[str, float] = {}                        # ip -> last request time
+_hits: dict[str, list[float]] = defaultdict(list)  # "tool:ip" -> run timestamps
+_last: dict[str, float] = {}                        # "tool:ip" -> last request time
 
 
 def _client_ip(request: Request) -> str:
@@ -58,29 +59,30 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _check_and_count(ip: str) -> int:
-    """Flood-guard + free-run cap. Returns the run number (1-based) on success,
-    raises HTTPException otherwise. Only call this once the inputs are valid."""
+def _check_and_count(ip: str, tool: str, limit: int) -> int:
+    """Flood-guard + per-tool free-run cap. Returns the run number (1-based) on
+    success, raises HTTPException otherwise. Call once inputs are valid."""
     now = time.time()
+    key = f"{tool}:{ip}"
     with _lock:
-        last = _last.get(ip, 0.0)
+        last = _last.get(key, 0.0)
         if now - last < MIN_INTERVAL:
             raise HTTPException(429, detail={"error": "too_fast", "message": "Slow down a moment and try again."})
-        _last[ip] = now
+        _last[key] = now
 
-        hits = [t for t in _hits[ip] if now - t < WINDOW_SECONDS]
-        if len(hits) >= FREE_RUNS:
-            _hits[ip] = hits
+        hits = [t for t in _hits[key] if now - t < WINDOW_SECONDS]
+        if len(hits) >= limit:
+            _hits[key] = hits
             raise HTTPException(
                 403,
                 detail={
                     "error": "limit_reached",
-                    "message": f"You've used your {FREE_RUNS} free demo runs. Sign up to run unlimited checks in the full app.",
+                    "message": f"You've used your {limit} free demo runs. Sign up to use the full app without limits.",
                     "sign_up_url": "https://app.mabnas.com",
                 },
             )
         hits.append(now)
-        _hits[ip] = hits
+        _hits[key] = hits
 
         # opportunistic cleanup so the dicts don't grow forever
         if len(_hits) > 5000:
@@ -210,7 +212,105 @@ def health():
 @app.post("/wind")
 def wind(body: WindIn, request: Request):
     ip = _client_ip(request)
-    run_no = _check_and_count(ip)   # raises 429/403 as needed
+    run_no = _check_and_count(ip, "wind", WIND_FREE_RUNS)   # raises 429/403 as needed
     result = compute_wind(body)
-    result["run"] = {"number": run_no, "free_limit": FREE_RUNS, "remaining": FREE_RUNS - run_no}
+    result["run"] = {"number": run_no, "free_limit": WIND_FREE_RUNS, "remaining": WIND_FREE_RUNS - run_no}
+    return result
+
+
+# ── Parametric portal-frame geometry ──────────────────────────────────────
+class FrameIn(BaseModel):
+    units: str = Field("si")
+    span: float = Field(..., gt=0, le=200, description="transverse span S")
+    eave_height: float = Field(..., gt=0, le=100)
+    roof_pitch: float = Field(..., ge=0, le=45, description="degrees")
+    bays: int = Field(..., ge=1, le=30, description="number of bays along length")
+    bay_spacing: float = Field(..., gt=0, le=50)
+    secondary: bool = Field(True, description="draw purlins & girts")
+
+    @field_validator("units")
+    @classmethod
+    def _u(cls, v):
+        v = v.lower()
+        if v not in ("si", "imperial"):
+            raise ValueError("units must be 'si' or 'imperial'")
+        return v
+
+
+def compute_frame(inp: FrameIn) -> dict:
+    S, H, N, b = inp.span, inp.eave_height, inp.bays, inp.bay_spacing
+    theta = math.radians(inp.roof_pitch)
+    ridge_h = H + (S / 2.0) * math.tan(theta)
+    frames = N + 1
+    length = N * b
+
+    nodes: list[list[float]] = []
+    members: list[dict] = []
+
+    def add(x, y, z) -> int:
+        nodes.append([round(x, 3), round(y, 3), round(z, 3)])
+        return len(nodes) - 1
+
+    # Main portal frames
+    main = []
+    for k in range(frames):
+        z = k * b
+        bl, br = add(0, 0, z), add(S, 0, z)
+        el, er = add(0, H, z), add(S, H, z)
+        rg = add(S / 2.0, ridge_h, z)
+        main.append((bl, br, el, er, rg))
+        members += [
+            {"i": bl, "j": el, "t": "column"}, {"i": br, "j": er, "t": "column"},
+            {"i": el, "j": rg, "t": "rafter"}, {"i": rg, "j": er, "t": "rafter"},
+        ]
+    # Longitudinal eave + ridge beams
+    for k in range(frames - 1):
+        a, c = main[k], main[k + 1]
+        members += [
+            {"i": a[2], "j": c[2], "t": "eave"}, {"i": a[3], "j": c[3], "t": "eave"},
+            {"i": a[4], "j": c[4], "t": "ridge"},
+        ]
+
+    # Secondary steel: purlins (roof) + girts (walls)
+    if inp.secondary:
+        fr = [1 / 3.0, 2 / 3.0]
+        purl, girt = [], []
+        for k in range(frames):
+            z = k * b
+            prow = []
+            for f in fr:  # left slope
+                prow.append(add(f * (S / 2.0), H + f * (ridge_h - H), z))
+            for f in fr:  # right slope
+                prow.append(add(S / 2.0 + f * (S / 2.0), ridge_h + f * (H - ridge_h), z))
+            purl.append(prow)
+            grow = []
+            for h in (H / 3.0, 2 * H / 3.0):
+                grow.append(add(0, h, z))
+                grow.append(add(S, h, z))
+            girt.append(grow)
+        for k in range(frames - 1):
+            for idx in range(len(purl[k])):
+                members.append({"i": purl[k][idx], "j": purl[k + 1][idx], "t": "purlin"})
+            for idx in range(len(girt[k])):
+                members.append({"i": girt[k][idx], "j": girt[k + 1][idx], "t": "girt"})
+
+    lunit = "m" if inp.units == "si" else "ft"
+    return {
+        "nodes": nodes,
+        "members": members,
+        "meta": {
+            "frames": frames, "span": S, "length": round(length, 2),
+            "eave_height": H, "ridge_height": round(ridge_h, 3),
+            "node_count": len(nodes), "member_count": len(members),
+            "length_unit": lunit,
+        },
+    }
+
+
+@app.post("/frame")
+def frame(body: FrameIn, request: Request):
+    ip = _client_ip(request)
+    run_no = _check_and_count(ip, "frame", FRAME_FREE_RUNS)
+    result = compute_frame(body)
+    result["run"] = {"number": run_no, "free_limit": FRAME_FREE_RUNS, "remaining": FRAME_FREE_RUNS - run_no}
     return result

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parametric Frame Preview — Mabna</title>
+<meta name="description" content="Free parametric portal-frame preview — set span, height, pitch and bays and see the 3D steel frame build instantly.">
+<link rel="icon" href="../images/logo.png" type="image/png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#f8fafc; --card:#ffffff; --fg:#0f172a; --muted:#64748b;
+    --border:#e2e8f0; --accent:#2563eb; --accent-dark:#1d4ed8;
+    --viewport:#0f172a; --radius:14px; --shadow:0 4px 24px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:Inter,system-ui,sans-serif;line-height:1.5;
+    padding:0 max(16px,env(safe-area-inset-left)) env(safe-area-inset-bottom) max(16px,env(safe-area-inset-right));}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding-block:24px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--fg)}
+  .brand img{height:30px}
+  .back{font-size:14px;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(26px,5vw,34px);margin:14px 0 4px;text-wrap:balance}
+  .sub{color:var(--muted);margin:0 0 20px;max-width:60ch}
+  .grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;min-width:0}
+  .card h2{font-family:'Space Grotesk',sans-serif;font-size:17px;margin:0 0 14px}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px;color:#334155}
+  input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font:inherit;background:#fff;color:var(--fg)}
+  input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+  .row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .toggle button{border:0;background:#fff;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
+  .toggle button.active{background:var(--accent);color:#fff}
+  .check{display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:600;font-size:13px;color:#334155}
+  .check input{width:16px;height:16px;accent-color:var(--accent)}
+  .runs-left{text-align:center;font-size:13px;color:var(--muted);margin-top:14px}
+  .err{display:none;margin-top:12px;padding:10px 12px;border-radius:9px;background:#fef2f2;color:#b91c1c;font-size:13px;font-weight:600}
+  .err.show{display:block}
+  .gate{display:none;margin-top:16px;padding:16px;border:1px dashed var(--accent);border-radius:12px;background:#eff6ff;text-align:center}
+  .gate.show{display:block}
+  .gate p{margin:0 0 10px;font-weight:600}
+  .btn-cta{display:inline-block;background:var(--accent);color:#fff;padding:10px 20px;border-radius:10px;font-weight:700}
+  .viewport{position:relative;background:var(--viewport);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;aspect-ratio:4/3;min-height:360px}
+  #cv{width:100%;height:100%;display:block;cursor:grab}
+  #cv:active{cursor:grabbing}
+  .hud{position:absolute;left:12px;bottom:12px;font-size:12px;color:#cbd5e1;background:rgba(15,23,42,.6);padding:6px 10px;border-radius:8px;backdrop-filter:blur(4px)}
+  .legend{position:absolute;right:12px;top:12px;font-size:11px;color:#e2e8f0;background:rgba(15,23,42,.6);padding:8px 10px;border-radius:8px;line-height:1.7}
+  .legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+  .meta b{color:var(--fg);font-family:'Space Grotesk',sans-serif}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1120;--card:#121a2b;--fg:#e2e8f0;--muted:#94a3b8;--border:#1e293b;color-scheme:dark;
+    }
+    :root:not([data-theme="light"]) input,:root:not([data-theme="light"]) select,
+    :root:not([data-theme="light"]) .toggle button{background:#0b1120}
+    :root:not([data-theme="light"]) .gate{background:#0f1d33}
+    :root:not([data-theme="light"]) .err{background:#2a1212;color:#fca5a5}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="https://mabnas.com"><img src="../images/logo.png" alt="">Mabna</a>
+    <a class="back" href="https://mabnas.com">← Back to site</a>
+  </header>
+
+  <h1>Parametric Frame Preview</h1>
+  <p class="sub">Set the portal-frame parameters and watch the 3D steel frame build instantly — drag to orbit, scroll to zoom. A preview of Mabna's parametric modeller; the full app turns this into an analysis-ready model.</p>
+
+  <div class="grid">
+    <!-- CONTROLS -->
+    <div class="card">
+      <h2>Parameters</h2>
+      <div class="toggle" id="units" style="margin-bottom:4px">
+        <button type="button" data-u="si" class="active">m</button>
+        <button type="button" data-u="imperial">ft</button>
+      </div>
+
+      <label id="l-span">Span (m)</label>
+      <input id="span" type="number" step="any" value="20" min="1">
+      <div class="row">
+        <div><label id="l-h">Eave height (m)</label><input id="eave_height" type="number" step="any" value="7" min="1"></div>
+        <div><label>Roof pitch (°)</label><input id="roof_pitch" type="number" step="any" value="10" min="0" max="45"></div>
+      </div>
+      <div class="row">
+        <div><label>Bays</label><input id="bays" type="number" step="1" value="5" min="1" max="30"></div>
+        <div><label id="l-b">Bay spacing (m)</label><input id="bay_spacing" type="number" step="any" value="6" min="1"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="secondary" checked> Show purlins &amp; girts</label>
+
+      <div class="runs-left" id="runsLeft">15 free previews</div>
+      <div class="err" id="err"></div>
+      <div class="gate" id="gate">
+        <p>You've used your free previews.</p>
+        <a class="btn-cta" href="https://app.mabnas.com">Build real models in the full app →</a>
+      </div>
+    </div>
+
+    <!-- VIEWPORT -->
+    <div>
+      <div class="viewport">
+        <canvas id="cv"></canvas>
+        <div class="legend">
+          <div><i style="background:#60a5fa"></i>columns / rafters</div>
+          <div><i style="background:#1d4ed8"></i>eave / ridge</div>
+          <div><i style="background:#f59e0b"></i>purlins</div>
+          <div><i style="background:#10b981"></i>girts</div>
+        </div>
+        <div class="hud">drag to orbit · scroll to zoom</div>
+      </div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+
+  <footer>Simplified geometry preview for illustration. &copy; 2026 Mabna.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const API_BASE = /^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)
+  ? "http://localhost:8100" : "https://demo.mabnas.com";
+const FREE = 15;
+const $ = id => document.getElementById(id);
+
+const COLORS = {column:0x60a5fa, rafter:0x60a5fa, eave:0x1d4ed8, ridge:0x1d4ed8, purlin:0xf59e0b, girt:0x10b981};
+
+let units="si";
+$("units").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  units=b.dataset.u;
+  [...$("units").children].forEach(x=>x.classList.toggle("active",x===b));
+  const si=units==="si", u=si?"m":"ft";
+  $("l-span").textContent=`Span (${u})`; $("l-h").textContent=`Eave height (${u})`; $("l-b").textContent=`Bay spacing (${u})`;
+  schedule();
+});
+
+// free-run counter (UX; server enforces)
+function used(){ return +(localStorage.getItem("mabna_demo_frame")||0); }
+function setUsed(n){ try{localStorage.setItem("mabna_demo_frame",n);}catch(e){} refresh(); }
+function refresh(){ const left=Math.max(0,FREE-used());
+  $("runsLeft").textContent=left>0?`${left} free preview${left>1?"s":""} left`:"No free previews left";
+  if(left<=0) gate(); }
+function gate(){ $("gate").classList.add("show"); }
+function showErr(m){ const e=$("err"); e.textContent=m; e.classList.add("show"); setTimeout(()=>e.classList.remove("show"),4000); }
+
+// ── Three.js scene ────────────────────────────────────────────────────────
+const canvas=$("cv");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,1,0.1,100000);
+const group=new THREE.Group(); scene.add(group);
+let rotX=-0.5, rotY=0.7, dist=60;
+
+function resize(){
+  const r=canvas.getBoundingClientRect();
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(r.width,r.height,false);
+  camera.aspect=r.width/r.height; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+
+function render(){
+  group.rotation.x=rotX; group.rotation.y=rotY;
+  camera.position.set(0,0,dist); camera.lookAt(0,0,0);
+  renderer.render(scene,camera);
+}
+function loop(){ render(); requestAnimationFrame(loop); }
+
+// drag to orbit, wheel to zoom
+let drag=false,px=0,py=0;
+canvas.addEventListener("pointerdown",e=>{drag=true;px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener("pointerup",e=>{drag=false;});
+canvas.addEventListener("pointermove",e=>{ if(!drag)return;
+  rotY+=(e.clientX-px)*0.008; rotX+=(e.clientY-py)*0.008;
+  rotX=Math.max(-1.4,Math.min(1.4,rotX)); px=e.clientX; py=e.clientY; });
+canvas.addEventListener("wheel",e=>{e.preventDefault(); dist*=(e.deltaY>0?1.1:0.9); dist=Math.max(5,Math.min(5000,dist));},{passive:false});
+
+function build(data){
+  group.clear();
+  const n=data.nodes, m=data.meta;
+  const cx=m.span/2, cy=m.ridge_height/2, cz=m.length/2;   // center of building
+  const byType={};
+  for(const mem of data.members){ (byType[mem.t]=byType[mem.t]||[]).push(mem); }
+  for(const t in byType){
+    const pos=[];
+    for(const mem of byType[t]){
+      const a=n[mem.i], b=n[mem.j];
+      pos.push(a[0]-cx,a[1]-cy,a[2]-cz, b[0]-cx,b[1]-cy,b[2]-cz);
+    }
+    const g=new THREE.BufferGeometry();
+    g.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+    group.add(new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:COLORS[t]||0x94a3b8})));
+  }
+  // fit camera
+  const diag=Math.sqrt(m.span**2+m.ridge_height**2+m.length**2);
+  dist=diag*1.4;
+  const u=m.length_unit;
+  $("meta").innerHTML=`<span><b>${m.frames}</b> frames</span><span><b>${m.member_count}</b> members</span>
+    <span><b>${m.node_count}</b> nodes</span><span>footprint <b>${m.span}×${m.length}</b> ${u}</span>
+    <span>ridge <b>${m.ridge_height}</b> ${u}</span>`;
+}
+
+// ── generate (debounced) ──────────────────────────────────────────────────
+let timer=null;
+function schedule(){ clearTimeout(timer); timer=setTimeout(generate,500); }
+["span","eave_height","roof_pitch","bays","bay_spacing"].forEach(id=>$(id).addEventListener("input",schedule));
+$("secondary").addEventListener("change",schedule);
+
+async function generate(){
+  if(used()>=FREE){ gate(); return; }
+  const payload={ units,
+    span:+$("span").value, eave_height:+$("eave_height").value, roof_pitch:+$("roof_pitch").value,
+    bays:parseInt($("bays").value), bay_spacing:+$("bay_spacing").value, secondary:$("secondary").checked };
+  for(const k of ["span","eave_height","bay_spacing"]) if(!(payload[k]>0)){ showErr("Enter positive dimensions."); return; }
+  try{
+    const r=await fetch(API_BASE+"/frame",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await r.json();
+    if(!r.ok){ const d=data.detail||{};
+      if(d.error==="limit_reached"){ setUsed(FREE); gate(); showErr(d.message||"Free limit reached."); return; }
+      if(d.error==="too_fast"){ return; }   // debounce race, ignore quietly
+      showErr(d.message||"Could not build. Check inputs."); return; }
+    build(data); setUsed(used()+1);
+    if(data.run && data.run.remaining<=0) gate();
+  }catch(e){ showErr("Could not reach the demo service."); }
+}
+
+resize(); loop(); refresh(); generate();
+</script>
+</body>
+</html>
