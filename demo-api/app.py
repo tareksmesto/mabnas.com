@@ -226,7 +226,7 @@ class FrameIn(BaseModel):
     roof_pitch: float = Field(..., ge=0, le=45, description="degrees")
     bays: int = Field(..., ge=1, le=30, description="number of bays along length")
     bay_spacing: float = Field(..., gt=0, le=50)
-    secondary: bool = Field(True, description="draw purlins & girts")
+    secondary: int = Field(2, ge=0, le=8, description="purlins per roof slope / girts per wall")
 
     @field_validator("units")
     @classmethod
@@ -272,8 +272,10 @@ def compute_frame(inp: FrameIn) -> dict:
         ]
 
     # Secondary steel: purlins (roof) + girts (walls)
-    if inp.secondary:
-        fr = [1 / 3.0, 2 / 3.0]
+    if inp.secondary > 0:
+        c = inp.secondary
+        fr = [(i + 1) / (c + 1) for i in range(c)]          # evenly-spaced along each rafter
+        hgts = [H * (i + 1) / (c + 1) for i in range(c)]     # evenly-spaced up each wall
         purl, girt = [], []
         for k in range(frames):
             z = k * b
@@ -284,7 +286,7 @@ def compute_frame(inp: FrameIn) -> dict:
                 prow.append(add(S / 2.0 + f * (S / 2.0), ridge_h + f * (H - ridge_h), z))
             purl.append(prow)
             grow = []
-            for h in (H / 3.0, 2 * H / 3.0):
+            for h in hgts:
                 grow.append(add(0, h, z))
                 grow.append(add(S, h, z))
             girt.append(grow)

@@ -33,6 +33,11 @@
   input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font:inherit;background:#fff;color:var(--fg)}
   input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
   .row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
+  .sld{margin-top:15px}
+  .sld label{display:flex;align-items:baseline;gap:6px;margin:0 0 7px;font-weight:600;font-size:13px;color:#334155}
+  .sld label b{font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--accent)}
+  .sld label .u{color:var(--muted);font-weight:500}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;margin:0}
   .toggle{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
   .toggle button{border:0;background:#fff;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
   .toggle button.active{background:var(--accent);color:#fff}
@@ -79,22 +84,23 @@
     <!-- CONTROLS -->
     <div class="card">
       <h2>Parameters</h2>
-      <div class="toggle" id="units" style="margin-bottom:4px">
+      <div class="toggle" id="units" style="margin-bottom:6px">
         <button type="button" data-u="si" class="active">m</button>
         <button type="button" data-u="imperial">ft</button>
       </div>
 
-      <label id="l-span">Span (m)</label>
-      <input id="span" type="number" step="any" value="20" min="1">
-      <div class="row">
-        <div><label id="l-h">Eave height (m)</label><input id="eave_height" type="number" step="any" value="7" min="1"></div>
-        <div><label>Roof pitch (°)</label><input id="roof_pitch" type="number" step="any" value="10" min="0" max="45"></div>
-      </div>
-      <div class="row">
-        <div><label>Bays</label><input id="bays" type="number" step="1" value="5" min="1" max="30"></div>
-        <div><label id="l-b">Bay spacing (m)</label><input id="bay_spacing" type="number" step="any" value="6" min="1"></div>
-      </div>
-      <label class="check"><input type="checkbox" id="secondary" checked> Show purlins &amp; girts</label>
+      <div class="sld"><label>Span <b id="v-span">20</b><span class="u">m</span></label>
+        <input id="span" type="range" min="6" max="60" step="1" value="20"></div>
+      <div class="sld"><label>Eave height <b id="v-eave_height">7</b><span class="u">m</span></label>
+        <input id="eave_height" type="range" min="3" max="20" step="0.5" value="7"></div>
+      <div class="sld"><label>Roof pitch <b id="v-roof_pitch">10</b>°</label>
+        <input id="roof_pitch" type="range" min="0" max="30" step="1" value="10"></div>
+      <div class="sld"><label>Bays <b id="v-bays">5</b></label>
+        <input id="bays" type="range" min="1" max="20" step="1" value="5"></div>
+      <div class="sld"><label>Bay spacing <b id="v-bay_spacing">6</b><span class="u">m</span></label>
+        <input id="bay_spacing" type="range" min="3" max="12" step="0.5" value="6"></div>
+      <div class="sld"><label>Purlins &amp; girts <b id="v-secondary">2</b> / face</label>
+        <input id="secondary" type="range" min="0" max="8" step="1" value="2"></div>
 
       <div class="runs-left" id="runsLeft">15 free previews</div>
       <div class="err" id="err"></div>
@@ -133,13 +139,12 @@ const $ = id => document.getElementById(id);
 const COLORS = {column:0x60a5fa, rafter:0x60a5fa, eave:0x1d4ed8, ridge:0x1d4ed8, purlin:0xf59e0b, girt:0x10b981};
 
 let units="si";
+function setUnitLabels(){ const u=units==="si"?"m":"ft"; document.querySelectorAll('.u').forEach(e=>e.textContent=u); }
 $("units").addEventListener("click", e=>{
   const b=e.target.closest("button"); if(!b) return;
   units=b.dataset.u;
   [...$("units").children].forEach(x=>x.classList.toggle("active",x===b));
-  const si=units==="si", u=si?"m":"ft";
-  $("l-span").textContent=`Span (${u})`; $("l-h").textContent=`Eave height (${u})`; $("l-b").textContent=`Bay spacing (${u})`;
-  schedule();
+  setUnitLabels(); schedule();
 });
 
 // free-run counter (UX; server enforces)
@@ -210,15 +215,17 @@ function build(data){
 
 // ── generate (debounced) ──────────────────────────────────────────────────
 let timer=null;
-function schedule(){ clearTimeout(timer); timer=setTimeout(generate,500); }
-["span","eave_height","roof_pitch","bays","bay_spacing"].forEach(id=>$(id).addEventListener("input",schedule));
-$("secondary").addEventListener("change",schedule);
+function schedule(){ clearTimeout(timer); timer=setTimeout(generate,350); }
+["span","eave_height","roof_pitch","bays","bay_spacing","secondary"].forEach(id=>{
+  const el=$(id), lbl=$("v-"+id);
+  el.addEventListener("input",()=>{ lbl.textContent=el.value; schedule(); });
+});
 
 async function generate(){
   if(used()>=FREE){ gate(); return; }
   const payload={ units,
     span:+$("span").value, eave_height:+$("eave_height").value, roof_pitch:+$("roof_pitch").value,
-    bays:parseInt($("bays").value), bay_spacing:+$("bay_spacing").value, secondary:$("secondary").checked };
+    bays:parseInt($("bays").value), bay_spacing:+$("bay_spacing").value, secondary:parseInt($("secondary").value) };
   for(const k of ["span","eave_height","bay_spacing"]) if(!(payload[k]>0)){ showErr("Enter positive dimensions."); return; }
   try{
     const r=await fetch(API_BASE+"/frame",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
@@ -232,7 +239,7 @@ async function generate(){
   }catch(e){ showErr("Could not reach the demo service."); }
 }
 
-resize(); loop(); refresh(); generate();
+resize(); loop(); refresh(); setUnitLabels(); generate();
 </script>
 </body>
 </html>
