@@ -1,17 +1,34 @@
-# Demo API — serves demo.mabnas.com over HTTPS and proxies to the FastAPI
-# container. Automatic Let's Encrypt cert. Point a DNS A record
-# demo.mabnas.com -> this server's IP before starting.
+# One Caddy serves BOTH the landing site (mabnas.com, static) and the demo API
+# (demo.mabnas.com, reverse-proxied). Runs on the landing OCI server. Point
+# DNS A records for mabnas.com, www.mabnas.com AND demo.mabnas.com at this host.
 
 {
 	email {$ACME_EMAIL}
 }
 
-{$DEMO_DOMAIN:demo.mabnas.com} {
+# ── Landing site (static) ─────────────────────────────────────────────────
+{$LANDING_DOMAIN:mabnas.com}, www.{$LANDING_DOMAIN:mabnas.com} {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	# Never serve repo internals as static files.
+	@blocked path /.git* /demo-api* /docker-compose* /Caddyfile* /.gitignore
+	respond @blocked 404
+
+	root * /srv/site
+	encode gzip
+	file_server
+}
+
+# ── Demo API ──────────────────────────────────────────────────────────────
+{$DEMO_DOMAIN:demo.mabnas.com} {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
 		-Server
 	}
 	reverse_proxy demo-api:8100
