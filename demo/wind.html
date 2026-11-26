@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wind Pressure Generator — Mabna</title>
+<meta name="description" content="Free ASCE 7-22 wind pressure demo — compute MWFRS wall pressures from basic wind speed, exposure and building geometry.">
+<link rel="icon" href="../images/logo.png" type="image/png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#f8fafc; --card:#ffffff; --fg:#0f172a; --muted:#64748b;
+    --border:#e2e8f0; --accent:#2563eb; --accent-dark:#1d4ed8;
+    --pressure:#dc2626; --suction:#2563eb;
+    --radius:14px; --shadow:0 4px 24px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font-family:Inter,system-ui,sans-serif;line-height:1.5;
+    padding:0 max(16px,env(safe-area-inset-left)) env(safe-area-inset-bottom) max(16px,env(safe-area-inset-right));}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1040px;margin:0 auto;padding-block:24px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--fg)}
+  .brand img{height:30px}
+  .back{font-size:14px;color:var(--muted)}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(26px,5vw,34px);margin:14px 0 4px;text-wrap:balance}
+  .sub{color:var(--muted);margin:0 0 20px;max-width:60ch}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;min-width:0}
+  .card h2{font-family:'Space Grotesk',sans-serif;font-size:17px;margin:0 0 16px}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px;color:#334155}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font:inherit;background:#fff;color:var(--fg)}
+  input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+  .row{display:flex;gap:12px}.row>div{flex:1;min-width:0}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:4px}
+  .toggle button{border:0;background:#fff;padding:8px 16px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
+  .toggle button.active{background:var(--accent);color:#fff}
+  .run{margin-top:20px;width:100%;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:13px;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+  .run:hover{background:var(--accent-dark)}
+  .run:disabled{opacity:.55;cursor:not-allowed}
+  .runs-left{text-align:center;font-size:13px;color:var(--muted);margin-top:10px}
+  .results{display:none}
+  .results.show{display:block}
+  .q{font-size:13px;color:var(--muted);margin:0}
+  .q b{color:var(--fg);font-size:22px;font-family:'Space Grotesk',sans-serif}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border)}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td.val{font-weight:700;font-variant-numeric:tabular-nums}
+  .pressure{color:var(--pressure)} .suction{color:var(--suction)}
+  svg{width:100%;height:auto;margin-top:8px}
+  .assume{margin:16px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)}
+  .assume li{padding:3px 0 3px 18px;position:relative}
+  .assume li::before{content:'•';position:absolute;left:4px;color:var(--accent)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .gate{display:none;margin-top:18px;padding:18px;border:1px dashed var(--accent);border-radius:12px;background:#eff6ff;text-align:center}
+  .gate.show{display:block}
+  .gate p{margin:0 0 12px;font-weight:600}
+  .btn-cta{display:inline-block;background:var(--accent);color:#fff;padding:11px 22px;border-radius:10px;font-weight:700}
+  .err{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;background:#fef2f2;color:#b91c1c;font-size:14px;font-weight:600}
+  .err.show{display:block}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1120;--card:#121a2b;--fg:#e2e8f0;--muted:#94a3b8;--border:#1e293b;
+      color-scheme:dark;
+    }
+    :root:not([data-theme="light"]) input,:root:not([data-theme="light"]) select,
+    :root:not([data-theme="light"]) .toggle button{background:#0b1120}
+    :root:not([data-theme="light"]) .gate{background:#0f1d33}
+    :root:not([data-theme="light"]) .err{background:#2a1212;color:#fca5a5}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="https://mabnas.com"><img src="../images/logo.png" alt="">Mabna</a>
+    <a class="back" href="https://mabnas.com">← Back to site</a>
+  </header>
+
+  <h1>Wind Pressure Generator</h1>
+  <p class="sub">ASCE 7-22 MWFRS wall pressures from basic wind speed, exposure and building geometry. A free preview of Mabna's load engine — the full app does roof zones, C&amp;C, every direction, and feeds it straight into analysis.</p>
+
+  <div class="grid">
+    <!-- INPUTS -->
+    <div class="card">
+      <h2>Inputs</h2>
+      <div class="toggle" id="units">
+        <button type="button" data-u="si" class="active">Metric (m/s)</button>
+        <button type="button" data-u="imperial">Imperial (mph)</button>
+      </div>
+
+      <label id="l-speed">Basic wind speed V (m/s)</label>
+      <input id="wind_speed" type="number" step="any" value="45" min="0">
+
+      <div class="row">
+        <div>
+          <label>Exposure category</label>
+          <select id="exposure">
+            <option value="B">B — urban/wooded</option>
+            <option value="C" selected>C — open terrain</option>
+            <option value="D">D — flat/coastal</option>
+          </select>
+        </div>
+        <div>
+          <label>Enclosure</label>
+          <select id="enclosure">
+            <option value="enclosed" selected>Enclosed</option>
+            <option value="partial">Partially enclosed</option>
+          </select>
+        </div>
+      </div>
+
+      <label id="l-h">Mean roof height h (m)</label>
+      <input id="mean_roof_height" type="number" step="any" value="8" min="0">
+
+      <div class="row">
+        <div>
+          <label id="l-L">Length L, ∥ wind (m)</label>
+          <input id="length_parallel" type="number" step="any" value="40" min="0">
+        </div>
+        <div>
+          <label id="l-B">Width B, ⟂ wind (m)</label>
+          <input id="width_normal" type="number" step="any" value="20" min="0">
+        </div>
+      </div>
+
+      <button class="run" id="runBtn">Calculate pressures</button>
+      <div class="runs-left" id="runsLeft">3 free runs</div>
+      <div class="err" id="err"></div>
+      <div class="gate" id="gate">
+        <p>You've used your free demo runs.</p>
+        <a class="btn-cta" href="https://app.mabnas.com">Sign up for the full app →</a>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="card results" id="results">
+      <h2>Results</h2>
+      <p class="q">Velocity pressure q<sub>h</sub> &nbsp; <b id="qh">—</b> <span id="qhu"></span></p>
+
+      <svg id="diagram" viewBox="0 0 300 200" role="img" aria-label="Plan view of wind pressures"></svg>
+
+      <table>
+        <thead><tr><th>Surface</th><th>C<sub>p</sub></th><th>Pressure</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="note" id="internal"></p>
+      <ul class="assume" id="assume"></ul>
+    </div>
+  </div>
+
+  <footer>Simplified preview for illustration. Verify against ASCE 7-22. &copy; 2026 Mabna.</footer>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+// Local docker test auto-uses the local API; production uses demo.mabnas.com.
+const API_BASE = /^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)
+  ? "http://localhost:8100"
+  : "https://demo.mabnas.com";
+const FREE = 3;
+
+let units = "si";
+const $ = id => document.getElementById(id);
+
+// Units toggle relabels fields
+$("units").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  units = b.dataset.u;
+  [...$("units").children].forEach(x => x.classList.toggle("active", x===b));
+  const si = units === "si";
+  $("l-speed").textContent = `Basic wind speed V (${si?"m/s":"mph"})`;
+  $("l-h").textContent = `Mean roof height h (${si?"m":"ft"})`;
+  $("l-L").textContent = `Length L, ∥ wind (${si?"m":"ft"})`;
+  $("l-B").textContent = `Width B, ⟂ wind (${si?"m":"ft"})`;
+});
+
+// Client-side free-run counter (UX only; server is the real limit)
+function runsUsed(){ return +(localStorage.getItem("mabna_demo_wind")||0); }
+function setRuns(n){ try{ localStorage.setItem("mabna_demo_wind", n); }catch(e){} refreshRuns(); }
+function refreshRuns(){
+  const left = Math.max(0, FREE - runsUsed());
+  $("runsLeft").textContent = left>0 ? `${left} free run${left>1?"s":""} left` : "No free runs left";
+  if(left<=0) showGate();
+}
+function showGate(){ $("gate").classList.add("show"); $("runBtn").disabled = true; }
+function showErr(m){ const e=$("err"); e.textContent=m; e.classList.add("show"); }
+function clearErr(){ $("err").classList.remove("show"); }
+
+$("runBtn").addEventListener("click", run);
+
+async function run(){
+  clearErr();
+  const payload = {
+    units,
+    wind_speed: +$("wind_speed").value,
+    exposure: $("exposure").value,
+    enclosure: $("enclosure").value,
+    mean_roof_height: +$("mean_roof_height").value,
+    length_parallel: +$("length_parallel").value,
+    width_normal: +$("width_normal").value,
+  };
+  for(const k of ["wind_speed","mean_roof_height","length_parallel","width_normal"]){
+    if(!(payload[k] > 0)){ showErr("Please enter positive numbers for all dimensions."); return; }
+  }
+  $("runBtn").disabled = true; $("runBtn").textContent = "Calculating…";
+  try{
+    const r = await fetch(API_BASE + "/wind", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if(!r.ok){
+      const d = data.detail || {};
+      if(d.error === "limit_reached"){ setRuns(FREE); showGate(); showErr(d.message||"Free limit reached."); return; }
+      if(d.error === "too_fast"){ showErr(d.message||"Slow down a moment."); return; }
+      showErr(d.message || d || "Could not compute. Check your inputs."); return;
+    }
+    render(data);
+    setRuns(runsUsed()+1);
+    if(data.run && data.run.remaining<=0) showGate();
+  }catch(err){
+    showErr("Could not reach the demo service. Please try again shortly.");
+  }finally{
+    $("runBtn").disabled = runsUsed()>=FREE; $("runBtn").textContent = "Calculate pressures";
+  }
+}
+
+function render(d){
+  $("results").classList.add("show");
+  $("qh").textContent = d.derived.qh;
+  $("qhu").textContent = d.derived.qh_unit;
+  const u = d.units.pressure;
+  $("rows").innerHTML = d.surfaces.map(s=>`
+    <tr><td>${s.name}</td><td>${s.Cp.toFixed(2)}</td>
+    <td class="val ${s.kind}">${s.pressure>0?"+":""}${s.pressure} ${u}</td></tr>`).join("");
+  $("internal").textContent = `Internal pressure ±${d.internal_pressure.value} ${u}  (${d.internal_pressure.note})`;
+  $("assume").innerHTML = d.assumptions.map(a=>`<li>${a}</li>`).join("");
+  drawDiagram(d);
+}
+
+function drawDiagram(d){
+  const p = Object.fromEntries(d.surfaces.map(s=>[s.name, s.pressure]));
+  const u = d.units.pressure;
+  const wind = p["Windward wall"], lee = p["Leeward wall"], side = p["Side walls"];
+  $("diagram").innerHTML = `
+    <rect x="110" y="60" width="80" height="80" fill="none" stroke="currentColor" stroke-width="1.5" rx="3"/>
+    <text x="150" y="104" text-anchor="middle" font-size="9" fill="currentColor">plan</text>
+    <!-- windward (left) -->
+    <line x1="60" y1="100" x2="104" y2="100" stroke="#dc2626" stroke-width="2" marker-end="url(#a)"/>
+    <text x="58" y="94" text-anchor="end" font-size="10" fill="#dc2626">+${wind} ${u}</text>
+    <text x="58" y="84" text-anchor="end" font-size="8" fill="#94a3b8">windward</text>
+    <!-- leeward (right) -->
+    <line x1="196" y1="100" x2="240" y2="100" stroke="#2563eb" stroke-width="2" marker-end="url(#a)"/>
+    <text x="242" y="94" font-size="10" fill="#2563eb">${lee} ${u}</text>
+    <text x="242" y="84" font-size="8" fill="#94a3b8">leeward</text>
+    <!-- side -->
+    <text x="150" y="40" text-anchor="middle" font-size="10" fill="#2563eb">side ${side} ${u}</text>
+    <text x="150" y="172" text-anchor="middle" font-size="9" fill="#94a3b8">wind →</text>
+    <defs><marker id="a" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="currentColor"/></marker></defs>`;
+}
+
+refreshRuns();
+</script>
+</body>
+</html>

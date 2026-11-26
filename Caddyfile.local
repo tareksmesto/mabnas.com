@@ -1,0 +1,8 @@
+# Local test only — serves the static landing site on :8080 (no TLS).
+# The demo page (demo/wind.html) auto-detects localhost and calls the
+# demo-api on :8100.
+:8080 {
+	root * /srv/site
+	file_server
+	encode gzip
+}

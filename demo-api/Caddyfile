@@ -1,0 +1,18 @@
+# Demo API — serves demo.mabnas.com over HTTPS and proxies to the FastAPI
+# container. Automatic Let's Encrypt cert. Point a DNS A record
+# demo.mabnas.com -> this server's IP before starting.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DEMO_DOMAIN:demo.mabnas.com} {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	reverse_proxy demo-api:8100
+}

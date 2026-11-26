@@ -1,0 +1,26 @@
+# Local full-stack test of the landing site + demos.
+#   docker compose -f docker-compose.local.yml up --build
+# then open  http://localhost:8080/           (landing page)
+#       and  http://localhost:8080/demo/wind.html   (the wind tool)
+#
+# The static site is served on :8080; the demo API on :8100. The wind page
+# detects localhost and calls http://localhost:8100 automatically.
+# Stop with:  docker compose -f docker-compose.local.yml down
+name: mabnas-demo
+
+services:
+  web:
+    image: caddy:2-alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - .:/srv/site:ro
+    depends_on:
+      - demo-api
+
+  demo-api:
+    build: ./demo-api
+    ports:
+      - "8100:8100"
+    restart: unless-stopped

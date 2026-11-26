@@ -1,0 +1,38 @@
+# Standalone demo-API stack: FastAPI + a dedicated Caddy for demo.mabnas.com.
+# Run this on a host whose ports 80/443 are free (e.g. the landing OCI server,
+# since the public site is on GitHub Pages). It is fully isolated from the main
+# app stack — no shared network, DB, or secrets.
+#
+#   DEMO_DOMAIN=demo.mabnas.com ACME_EMAIL=info@mabnas.com \
+#     docker compose up -d --build
+#
+# Redeploy after editing:
+#   git pull && docker compose up -d --build
+
+services:
+  demo-api:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "8100"
+    # No published host port — only Caddy reaches it on the internal network.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DEMO_DOMAIN: ${DEMO_DOMAIN:-demo.mabnas.com}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - demo_caddy_data:/data
+      - demo_caddy_config:/config
+    depends_on:
+      - demo-api
+
+volumes:
+  demo_caddy_data:
+  demo_caddy_config:
