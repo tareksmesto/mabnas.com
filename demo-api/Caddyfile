@@ -6,7 +6,7 @@
 	email {$ACME_EMAIL}
 }
 
-# ── Landing site (static) + Umami analytics ───────────────────────────────
+# ── Landing site (static) ─────────────────────────────────────────────────
 {$LANDING_DOMAIN:mabnas.com}, www.{$LANDING_DOMAIN:mabnas.com} {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -15,27 +15,20 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}
+	@blocked path /.git* /demo-api* /docker-compose* /Caddyfile* /.gitignore
+	respond @blocked 404
+	root * /srv/site
+	encode gzip
+	file_server
+}
 
-	# Umami analytics: dashboard at /umami, tracking script + ingest.
-	handle /umami* {
-		uri strip_prefix /umami
-		reverse_proxy umami:3000
+# ── Analytics (Umami) — own subdomain so its app runs at root ─────────────
+{$ANALYTICS_DOMAIN:analytics.mabnas.com} {
+	header {
+		X-Content-Type-Options "nosniff"
+		-Server
 	}
-	handle /script.js {
-		reverse_proxy umami:3000
-	}
-	handle /api/send {
-		reverse_proxy umami:3000
-	}
-
-	# Everything else = the static landing site.
-	handle {
-		@blocked path /.git* /demo-api* /docker-compose* /Caddyfile* /.gitignore
-		respond @blocked 404
-		root * /srv/site
-		encode gzip
-		file_server
-	}
+	reverse_proxy umami:3000
 }
 
 # ── Demo API ──────────────────────────────────────────────────────────────

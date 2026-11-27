@@ -23,6 +23,7 @@ services:
     environment:
       LANDING_DOMAIN: ${LANDING_DOMAIN:-mabnas.com}
       DEMO_DOMAIN: ${DEMO_DOMAIN:-demo.mabnas.com}
+      ANALYTICS_DOMAIN: ${ANALYTICS_DOMAIN:-analytics.mabnas.com}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
     ports:
       - "80:80"
