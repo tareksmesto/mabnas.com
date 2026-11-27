@@ -34,7 +34,40 @@ services:
       - demo_caddy_config:/config
     depends_on:
       - demo-api
+      - umami
+
+  # ── Analytics (Umami) — reuses the existing data volume from the old
+  #    landing stack, so historical analytics + the admin login are preserved.
+  umami-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:?set UMAMI_DB_PASSWORD}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET}
+      DISABLE_TELEMETRY: 1
+    depends_on:
+      umami-db:
+        condition: service_healthy
 
 volumes:
   demo_caddy_data:
   demo_caddy_config:
+  # The existing analytics data volume from the old landing stack.
+  umami_db_data:
+    external: true
+    name: mabna-landing_umami_db_data
